@@ -2,7 +2,12 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:4000/api/auth";
+// const API_URL = "http://localhost:4000/api/auth";
+const API_URL = "http://160.187.54.80:4000/api/auth";
+
+
+
+
 interface LoginResponse {
   message: string;
   token: string;

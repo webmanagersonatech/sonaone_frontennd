@@ -18,7 +18,11 @@ interface GalleryListResponse {
   page: number;
 }
 
-const API_URL = "http://localhost:4000/api/galleryupload";
+// const API_URL = "http://localhost:4000/api/galleryupload";
+
+const API_URL = "http://160.187.54.80:4000/api/galleryupload";
+
+
 
 // ===============================
 // 🔥 AXIOS INSTANCE WITH TOKEN
