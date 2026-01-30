@@ -8,13 +8,7 @@ import { FaWhatsapp, FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "reac
 export default function ViewImageModal({ open, onClose, image }: any) {
   if (!open) return null;
 
-  const shareLinks = {
-    whatsapp: `https://wa.me/?text=${encodeURIComponent(image?.photo_name)} - ${encodeURIComponent(`http://localhost:4000${image?.image}`)}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`http://localhost:4000${image?.image}`)}`,
-    instagram: `https://www.instagram.com/`, // Instagram does NOT allow direct share URLs
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`http://localhost:4000${image?.image}`)}`,
-    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(`http://localhost:4000${image?.image}`)}`
-  };
+
 
   return (
     <AnimatePresence>
@@ -52,7 +46,8 @@ export default function ViewImageModal({ open, onClose, image }: any) {
 
           {/* Image */}
           <img
-            src={`http://localhost:4000${image?.image}`}
+            src={`${process.env.NEXT_PUBLIC_API_BASE}${image?.image}`}
+
             className="w-full max-h-[70vh] object-contain bg-black"
           />
 

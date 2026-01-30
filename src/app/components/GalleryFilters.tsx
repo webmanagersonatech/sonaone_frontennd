@@ -44,7 +44,7 @@ export default function GalleryFilters({
         >
           <option value="">All Years</option>
           {Array.from({ length: 70 }).map((_, i) => {
-            const y = 2025 - i;
+            const y = 2026 - i;
             return (
               <option key={y} value={y}>
                 {y}

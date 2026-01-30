@@ -303,7 +303,7 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                   >
                     <option value="">Select Year</option>
                     {Array.from({ length: 80 }).map((_, i) => {
-                      const y = 2025 - i;
+                      const y = 2026 - i;
                       return (
                         <option key={y} value={y}>
                           {y}
