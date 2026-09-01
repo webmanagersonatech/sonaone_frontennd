@@ -122,15 +122,7 @@ export default function Login() {
 
         {msg && <div className="text-sm text-red-600 text-center">{msg}</div>}
 
-        <p className="text-sm text-center text-gray-600">
-          New user?{" "}
-          <a
-            href="/register"
-            className="text-primary font-semibold hover:underline"
-          >
-            Create Account
-          </a>
-        </p>
+     
       </div>
     </div>
   );

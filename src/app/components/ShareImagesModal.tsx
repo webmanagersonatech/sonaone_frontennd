@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { getImageUrl } from "../lib/getImageUrl";
 
 interface ShareImagesModalProps {
     open: boolean;
@@ -19,7 +20,7 @@ export default function ShareImagesModal({ open, onClose, images }: ShareImagesM
 
     if (!open) return null;
 
-    const imageUrls = images.map((img) => `${process.env.NEXT_PUBLIC_API_BASE}${img.image}`);
+    const imageUrls = images.map((img) => getImageUrl(img.image));
 
     const combinedText = encodeURIComponent("Check these images: " + imageUrls.join(", "));
 
@@ -146,7 +147,7 @@ export default function ShareImagesModal({ open, onClose, images }: ShareImagesM
                         {/* Images preview grid */}
                         <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
                             {images.map((p) => {
-                                const url = `${process.env.NEXT_PUBLIC_API_BASE}${p.image}`;
+                                const url = getImageUrl(p.image);
 
                                 return (
                                     <motion.div key={p._id} className="relative rounded-lg overflow-hidden shadow" variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 150 }}>

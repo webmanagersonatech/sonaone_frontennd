@@ -3,12 +3,21 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Share2 } from "lucide-react";
 import { FaWhatsapp, FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
+import { getImageUrl } from "../lib/getImageUrl";
 
 
 export default function ViewImageModal({ open, onClose, image }: any) {
   if (!open) return null;
 
+  const fullImageUrl = getImageUrl(image?.image);
 
+  const shareLinks = {
+    whatsapp: `https://wa.me/?text=${encodeURIComponent(image?.photo_name)} - ${encodeURIComponent(fullImageUrl)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fullImageUrl)}`,
+    instagram: `https://www.instagram.com/`, // Instagram does NOT allow direct share URLs
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(fullImageUrl)}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(fullImageUrl)}`
+  };
 
   return (
     <AnimatePresence>
@@ -46,8 +55,7 @@ export default function ViewImageModal({ open, onClose, image }: any) {
 
           {/* Image */}
           <img
-            src={`${process.env.NEXT_PUBLIC_API_BASE}${image?.image}`}
-
+            src={fullImageUrl}
             className="w-full max-h-[70vh] object-contain bg-black"
           />
 

@@ -2,23 +2,23 @@
 
 import axios from "axios";
 
-interface GalleryItem {
+interface VideoItem {
   _id: string;
-  photo_name: string;
+  video_name: string;
   year: number;
   description?: string;
-  image: string;
+  video: string;
 }
 
-interface GalleryListResponse {
-  docs: GalleryItem[];
+interface VideoListResponse {
+  docs: VideoItem[];
   totalDocs: number;
   limit: number;
   totalPages: number;
   page: number;
 }
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE}/galleryupload`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE}/videoupload`;
 
 // ===============================
 // 🔥 AXIOS INSTANCE WITH TOKEN
@@ -33,7 +33,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
 
     if (!config.headers) {
-      config.headers = {}; // 👈 FIX
+      config.headers = {};
     }
 
     if (token) {
@@ -46,11 +46,11 @@ api.interceptors.request.use(
 );
 
 // ===============================
-// 🔥 GALLERY APIS
+// 🔥 VIDEO APIS
 // ===============================
 
-// Upload image
-export async function uploadGallery(formData: FormData) {
+// Upload video
+export async function uploadVideo(formData: FormData) {
   try {
     const res = await api.post("/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -65,38 +65,37 @@ export async function uploadGallery(formData: FormData) {
   }
 }
 
-// List gallery items
-export async function listGallery(
+// List video items
+export async function listVideo(
   page = 1,
   limit = 20,
-  photo_name = "",
+  video_name = "",
   year = ""
 ): Promise<
-  | { success: true; data: GalleryListResponse }
+  | { success: true; data: VideoListResponse }
   | { success: false; message: string }
 > {
   try {
     const query = new URLSearchParams({
       page: String(page),
       limit: String(limit),
-      photo_name,
+      video_name,
       year,
     });
 
-    const res = await api.get<GalleryListResponse>(`/?${query.toString()}`);
+    const res = await api.get<VideoListResponse>(`/?${query.toString()}`);
 
     return { success: true, data: res.data };
   } catch (error: any) {
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to load gallery",
+      message: error.response?.data?.message || "Failed to load videos",
     };
   }
 }
 
-
-// Get single gallery item
-export async function getGallery(id: string) {
+// Get single video item
+export async function getVideo(id: string) {
   try {
     const res = await api.get(`/${id}`);
     return { success: true, data: res.data };
@@ -105,8 +104,8 @@ export async function getGallery(id: string) {
   }
 }
 
-// Update gallery
-export async function updateGallery(id: string, formData: FormData) {
+// Update video
+export async function updateVideo(id: string, formData: FormData) {
   try {
     const res = await api.put(`/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -117,8 +116,8 @@ export async function updateGallery(id: string, formData: FormData) {
   }
 }
 
-// Delete gallery item
-export async function deleteGallery(id: string) {
+// Delete video item
+export async function deleteVideo(id: string) {
   try {
     const res = await api.delete(`/${id}`);
     return { success: true, data: res.data };

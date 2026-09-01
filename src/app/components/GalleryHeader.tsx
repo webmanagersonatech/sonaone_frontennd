@@ -1,16 +1,23 @@
 "use client";
 
-import { useState, } from "react";
-import { Menu, X, LogOut, Upload } from "lucide-react";
+import { useState } from "react";
+import { Menu, X, LogOut, Upload, Video as VideoIcon } from "lucide-react";
 import { uploadGallery } from "../lib/api/galleryRequest";
+import { uploadVideo } from "../lib/api/videoRequest";
 import Notiflix from "notiflix";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+interface GalleryHeaderProps {
+  refetch: () => void;
+  refetchVideos?: () => void;
+}
 
-export default function GalleryHeader({ refetch }: { refetch: () => void }) {
+export default function GalleryHeader({ refetch, refetchVideos }: GalleryHeaderProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  /* ========= Photo upload state ========= */
   const [uploadOpen, setUploadOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [photoName, setPhotoName] = useState("");
@@ -18,6 +25,14 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
   const [desc, setDesc] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  /* ========= Video upload state ========= */
+  const [videoUploadOpen, setVideoUploadOpen] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [videoName, setVideoName] = useState("");
+  const [videoYear, setVideoYear] = useState("");
+  const [videoDesc, setVideoDesc] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
 
   /* ========= Convert to WebP ========= */
   const convertToWebp = async (file: File) =>
@@ -56,14 +71,13 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
       };
     });
 
-  /* ========= Upload ========= */
+  /* ========= Upload Photo ========= */
   const handleUpload = async () => {
     if (!imageFile) {
       Notiflix.Notify.failure("Select an image first!");
       return;
     }
 
-    // Start loading
     setIsLoading(true);
     Notiflix.Loading.circle("Uploading...");
 
@@ -78,14 +92,12 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
 
       const result = await uploadGallery(fd);
 
-      // Stop loading
       Notiflix.Loading.remove();
       setIsLoading(false);
 
       if (result.success) {
         Notiflix.Notify.success("Photo uploaded successfully!");
 
-        // Reset UI
         setUploadOpen(false);
         refetch();
 
@@ -104,20 +116,90 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
     }
   };
 
+  /* ========= Video file select (with preview + size guard) ========= */
+  const MAX_VIDEO_MB = 200;
+
+  const handleVideoFileChange = (file: File | null) => {
+    if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+
+    if (!file) {
+      setVideoFile(null);
+      setVideoPreviewUrl(null);
+      return;
+    }
+
+    if (!file.type.startsWith("video/")) {
+      Notiflix.Notify.failure("Please select a video file!");
+      return;
+    }
+
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      Notiflix.Notify.failure(`Video must be under ${MAX_VIDEO_MB}MB!`);
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreviewUrl(URL.createObjectURL(file));
+  };
+
+  /* ========= Upload Video ========= */
+  const handleVideoUpload = async () => {
+    if (!videoFile) {
+      Notiflix.Notify.failure("Select a video first!");
+      return;
+    }
+
+    setIsVideoLoading(true);
+    Notiflix.Loading.circle("Uploading video...");
+
+    try {
+      const fd = new FormData();
+      fd.append("video_name", videoName);
+      fd.append("year", videoYear);
+      fd.append("description", videoDesc);
+      fd.append("video", videoFile);
+
+      const result = await uploadVideo(fd);
+
+      Notiflix.Loading.remove();
+      setIsVideoLoading(false);
+
+      if (result.success) {
+        Notiflix.Notify.success("Video uploaded successfully!");
+
+        setVideoUploadOpen(false);
+        refetchVideos?.();
+
+        setVideoName("");
+        setVideoYear("");
+        setVideoDesc("");
+        handleVideoFileChange(null);
+      } else {
+        Notiflix.Notify.failure(result.message || "Upload failed!");
+      }
+    } catch (err) {
+      Notiflix.Loading.remove();
+      setIsVideoLoading(false);
+
+      Notiflix.Notify.failure("Unexpected error occurred!");
+    }
+  };
+
+  const closeVideoModal = () => {
+    setVideoUploadOpen(false);
+    handleVideoFileChange(null);
+  };
+
   const handleLogout = () => {
-    // 1️⃣ Clear all storage
     localStorage.clear();
     sessionStorage.clear();
 
-    // 2️⃣ Show success notification
     Notiflix.Notify.success("Logged out successfully");
 
-    // 3️⃣ Redirect to homepage after short delay
     setTimeout(() => {
       router.push("/");
     }, 1500);
   };
-
 
   return (
     <header className="relative text-white">
@@ -150,6 +232,15 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
           </li>
           <li>
             <button
+              onClick={() => setVideoUploadOpen(true)}
+              className="flex items-center gap-2 hover:text-[#F3D08B]"
+            >
+              <VideoIcon size={18} />
+              Upload Video
+            </button>
+          </li>
+          <li>
+            <button
               onClick={handleLogout}
               className="flex items-center gap-2 hover:text-red-400 font-medium"
             >
@@ -158,7 +249,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
             </button>
           </li>
         </ul>
-
 
         <button className="sm:hidden" onClick={() => setSidebarOpen(true)}>
           <Menu size={28} />
@@ -187,7 +277,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
       <AnimatePresence>
         {sidebarOpen && (
           <>
-            {/* BG Overlay */}
             <motion.div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
               initial={{ opacity: 0 }}
@@ -197,7 +286,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
               onClick={() => setSidebarOpen(false)}
             />
 
-            {/* Auto-height sidebar */}
             <motion.aside
               className="fixed top-0 right-0 z-50 w-72 bg-[#0A0F1F] border-l border-white/10 shadow-xl rounded-l-md overflow-hidden"
               initial={{ x: "100%" }}
@@ -230,6 +318,17 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                 </button>
 
                 <button
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    setVideoUploadOpen(true);
+                  }}
+                  className="w-full px-4 py-3 text-left text-gray-200 border-b border-white/10 hover:text-[#F3D08B] flex items-center gap-2"
+                >
+                  <VideoIcon size={18} />
+                  Upload Video
+                </button>
+
+                <button
                   onClick={handleLogout}
                   className="w-full px-4 py-3 text-left text-red-400 border-b border-white/10 hover:text-red-500 flex items-center gap-2"
                 >
@@ -242,8 +341,7 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
         )}
       </AnimatePresence>
 
-
-      {/* ================= UPLOAD POPUP ================= */}
+      {/* ================= UPLOAD PHOTO POPUP ================= */}
       <AnimatePresence>
         {uploadOpen && (
           <motion.div
@@ -265,7 +363,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                 duration: 0.3,
               }}
             >
-              {/* Close Button */}
               <button
                 onClick={() => setUploadOpen(false)}
                 className="absolute top-3 right-3 text-gray-700 hover:text-black"
@@ -273,14 +370,11 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                 <X size={24} />
               </button>
 
-              {/* Title */}
               <h2 className="text-2xl font-semibold text-center text-black py-6 border-b">
                 Upload Photo
               </h2>
 
-              {/* Form Fields */}
               <div className="px-6 py-5 space-y-5 overflow-y-auto">
-                {/* Photo Name */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-black">
                     Photo Name
@@ -293,7 +387,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                   />
                 </div>
 
-                {/* Year */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-black">Year</label>
                   <select
@@ -303,7 +396,7 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                   >
                     <option value="">Select Year</option>
                     {Array.from({ length: 80 }).map((_, i) => {
-                      const y = 2026 - i;
+                      const y = 2025 - i;
                       return (
                         <option key={y} value={y}>
                           {y}
@@ -313,7 +406,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                   </select>
                 </div>
 
-                {/* Description */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-black">
                     Description
@@ -327,7 +419,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                   />
                 </div>
 
-                {/* File Upload */}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-black">Image</label>
                   <input
@@ -340,7 +431,6 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
                 </div>
               </div>
 
-              {/* Footer Buttons */}
               <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
                 <button
                   onClick={() => setUploadOpen(false)}
@@ -363,6 +453,129 @@ export default function GalleryHeader({ refetch }: { refetch: () => void }) {
         )}
       </AnimatePresence>
 
+      {/* ================= UPLOAD VIDEO POPUP ================= */}
+      <AnimatePresence>
+        {videoUploadOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col overflow-hidden relative"
+              initial={{ opacity: 0, scale: 0.85, y: 40 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 40 }}
+              transition={{
+                type: "spring",
+                stiffness: 120,
+                damping: 15,
+                duration: 0.3,
+              }}
+            >
+              <button
+                onClick={closeVideoModal}
+                className="absolute top-3 right-3 text-gray-700 hover:text-black"
+              >
+                <X size={24} />
+              </button>
+
+              <h2 className="text-2xl font-semibold text-center text-black py-6 border-b">
+                Upload Video
+              </h2>
+
+              <div className="px-6 py-5 space-y-5 overflow-y-auto">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-black">
+                    Video Name
+                  </label>
+                  <input
+                    className="w-full p-3 rounded-lg border border-gray-300 text-black bg-white focus:border-black focus:outline-none"
+                    placeholder="Enter video title"
+                    value={videoName}
+                    onChange={(e) => setVideoName(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-black">Year</label>
+                  <select
+                    className="w-full p-3 rounded-lg border border-gray-300 text-black bg-white focus:border-black focus:outline-none"
+                    value={videoYear}
+                    onChange={(e) => setVideoYear(e.target.value)}
+                  >
+                    <option value="">Select Year</option>
+                    {Array.from({ length: 80 }).map((_, i) => {
+                      const y = 2025 - i;
+                      return (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-black">
+                    Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full p-3 rounded-lg border border-gray-300 text-black bg-white focus:border-black focus:outline-none"
+                    placeholder="Short description..."
+                    value={videoDesc}
+                    onChange={(e) => setVideoDesc(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-black">Video</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="text-black"
+                    onChange={(e) =>
+                      handleVideoFileChange(e.target.files?.[0] ?? null)
+                    }
+                  />
+                  <p className="text-xs text-gray-500">
+                    Max {MAX_VIDEO_MB}MB • MP4/WebM recommended
+                  </p>
+
+                  {videoPreviewUrl && (
+                    <video
+                      src={videoPreviewUrl}
+                      controls
+                      className="w-full rounded-lg mt-2 max-h-64 bg-black"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+                <button
+                  onClick={closeVideoModal}
+                  className="px-5 py-2 rounded-lg bg-gray-200 text-black hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  disabled={isVideoLoading}
+                  onClick={handleVideoUpload}
+                  className={`px-5 py-2 rounded-lg text-white font-semibold ${isVideoLoading ? "bg-gray-400" : "bg-black hover:bg-gray-900"
+                    }`}
+                >
+                  {isVideoLoading ? "Uploading..." : "Upload"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

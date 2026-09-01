@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGallery, updateGallery } from "@/app/lib/api/galleryRequest";
+import { getVideo, updateVideo } from "@/app/lib/api/videoRequest";
 import { getImageUrl } from "@/app/lib/getImageUrl";
 
 import Notiflix from "notiflix";
@@ -11,22 +11,22 @@ interface Props {
     onUpdated: () => void; // callback to refresh main list
 }
 
-export default function EditForm({ id, onClose, onUpdated }: Props) {
+export default function EditVideoForm({ id, onClose, onUpdated }: Props) {
     const [loading, setLoading] = useState(false);
-    const [photo, setPhoto] = useState<any>(null);
+    const [video, setVideo] = useState<any>(null);
 
-    const [photo_name, setPhotoName] = useState("");
+    const [video_name, setVideoName] = useState("");
     const [year, setYear] = useState("");
     const [description, setDescription] = useState("");
-    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
 
-    // Load existing photo
+    // Load existing video
     useEffect(() => {
         const fetchData = async () => {
-            const res: any = await getGallery(id);
+            const res: any = await getVideo(id);
             if (res.success) {
-                setPhoto(res.data);
-                setPhotoName(res.data.photo_name);
+                setVideo(res.data);
+                setVideoName(res.data.video_name);
                 setYear(String(res.data.year));
                 setDescription(res.data.description || "");
             }
@@ -40,24 +40,24 @@ export default function EditForm({ id, onClose, onUpdated }: Props) {
         e.preventDefault();
         setLoading(true);
 
-        Notiflix.Loading.circle("Updating photo...");
+        Notiflix.Loading.circle("Updating video...");
 
         const formData = new FormData();
-        formData.append("photo_name", photo_name);
+        formData.append("video_name", video_name);
         formData.append("year", year);
         formData.append("description", description);
 
-        if (imageFile) {
-            formData.append("image", imageFile);
+        if (videoFile) {
+            formData.append("video", videoFile);
         }
 
-        const res = await updateGallery(id, formData);
+        const res = await updateVideo(id, formData);
 
         setLoading(false);
         Notiflix.Loading.remove();
 
         if (res.success) {
-            Notiflix.Notify.success("Photo updated successfully!");
+            Notiflix.Notify.success("Video updated successfully!");
             onUpdated();
             onClose();
         } else {
@@ -66,17 +66,17 @@ export default function EditForm({ id, onClose, onUpdated }: Props) {
     };
 
 
-    if (!photo) return <p className="p-4">Loading...</p>;
+    if (!video) return <p className="p-4">Loading...</p>;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 p-3">
 
-            {/* Photo Name */}
+            {/* Video Name */}
             <div>
-                <label className="block font-medium">Photo Name</label>
+                <label className="block font-medium">Video Name</label>
                 <input
-                    value={photo_name}
-                    onChange={(e) => setPhotoName(e.target.value)}
+                    value={video_name}
+                    onChange={(e) => setVideoName(e.target.value)}
                     className="w-full h-12 border px-3 rounded-lg"
                 />
             </div>
@@ -103,22 +103,23 @@ export default function EditForm({ id, onClose, onUpdated }: Props) {
                 />
             </div>
 
-            {/* Image Preview */}
+            {/* Current Video Preview */}
             <div>
-                <label className="block font-medium">Current Image</label>
-                <img
-                    src={getImageUrl(photo.image)}
-                    className="w-32 h-32 object-cover rounded-lg border"
+                <label className="block font-medium">Current Video</label>
+                <video
+                    src={getImageUrl(video.video)}
+                    controls
+                    className="w-full max-h-48 rounded-lg border bg-black"
                 />
             </div>
 
-            {/* Upload New Image */}
+            {/* Upload New Video */}
             <div>
-                <label className="block font-medium">Replace Image (Optional)</label>
+                <label className="block font-medium">Replace Video (Optional)</label>
                 <input
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    accept="video/*"
+                    onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
                     className="w-full"
                 />
             </div>
@@ -128,7 +129,7 @@ export default function EditForm({ id, onClose, onUpdated }: Props) {
                 disabled={loading}
                 className="w-full h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-                {loading ? "Updating..." : "Update Photo"}
+                {loading ? "Updating..." : "Update Video"}
             </button>
         </form>
     );
